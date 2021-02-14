@@ -1,0 +1,8 @@
+server:
+  port : 9095
+  servlet:
+    context-path: /mathoperations
+
+security:
+  key: AppGate2021
+  uniq-id: 1a88fb71-cfbb-48f7-b493-c7579aea3f99
