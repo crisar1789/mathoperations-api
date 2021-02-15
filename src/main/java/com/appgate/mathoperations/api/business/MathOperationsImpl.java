@@ -8,7 +8,6 @@ import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -19,7 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.FileCopyUtils;
 
 import com.appgate.mathoperations.api.model.User;
-import com.appgate.mathoperations.api.model.UserDao;
+import com.appgate.mathoperations.api.model.UserRepository;
 import com.appgate.mathoperations.api.rq.AddOperandRq;
 import com.appgate.mathoperations.api.rq.CalculateRq;
 import com.appgate.mathoperations.api.rq.SessionRq;
@@ -29,6 +28,7 @@ import com.appgate.mathoperations.api.rs.Response;
 import com.appgate.mathoperations.api.rs.SessionRs;
 import com.appgate.mathoperations.api.security.Security;
 import com.appgate.mathoperations.api.util.ConstantsUtil;
+import com.appgate.mathoperations.api.util.Utility;
 
 @Service
 public class MathOperationsImpl implements MathOperationsInt {
@@ -38,7 +38,7 @@ public class MathOperationsImpl implements MathOperationsInt {
 	private String key;
 	
 	@Autowired
-    private UserDao userDao;
+    private UserRepository userRepository;
 	
 	public MathOperationsImpl() {
 		
@@ -52,6 +52,12 @@ public class MathOperationsImpl implements MathOperationsInt {
 		} 
 	}
 	
+	/**
+	 * Método encargado de generar un id de sessión para un usuario
+	 * y registrar sus datos en base de datos
+	 * @param sessionRq Objeto con los datos del usuario
+	 * @return Objeto con los datos de respuesta del servicio
+	 */
 	@Override
 	public Response<SessionRs> generateSessionId(SessionRq sessionRq) {
 		
@@ -68,7 +74,7 @@ public class MathOperationsImpl implements MathOperationsInt {
 					Long.valueOf(sessionRq.getNroDoc()), sessionId);
 			
 			// Se guarda el usuario
-			userDao.save(user);
+			userRepository.save(user);
 			
 			response = new Response<>(200, ConstantsUtil.SUCCESS_TRANSACTION, sessionRs);
 			
@@ -79,20 +85,29 @@ public class MathOperationsImpl implements MathOperationsInt {
 		return response;
 	}
 
+	/**
+	 * Método encargado de adicionar un operando para el usuario
+	 * @param addRq Objeto con los datos de la petición
+	 * @return Objeto con los datos de respuesta del servicio
+	 */
 	@Override
 	public Response<AddOperandRs> addOperand(AddOperandRq addRq) {
 		Response<AddOperandRs> response = null;
 		try {
 			
-			String decryptSessionId = Security.desencriptar(addRq.getSessionId(), this.key);
-			String[] datos = decryptSessionId.split("\\.");
-			
-			Optional<User> optional = userDao.findById(Long.valueOf(datos[1]));
-			User user = optional.get();
+			User user = Utility.consultarUsuario(addRq.getSessionId(), 
+					this.key, this.userRepository);
 			
 			// Se valida la sesión
-			if (!addRq.getSessionId().equals(user.getSessionId())) {
+			if (!Utility.validarSession(addRq.getSessionId(), user.getSessionId())) {
 				return new Response<AddOperandRs>(400, ConstantsUtil.BAD_REQUEST, new AddOperandRs("Invalid Session Id"));
+			}
+			 
+			// Se verifica si se adiciona un número
+			try {
+				Double.valueOf(addRq.getOperand());
+			} catch (NumberFormatException e) {
+				return new Response<AddOperandRs>(400, ConstantsUtil.BAD_REQUEST, new AddOperandRs("Invalid Operand"));
 			}
 			
 			String valores = "";
@@ -104,7 +119,7 @@ public class MathOperationsImpl implements MathOperationsInt {
 			
 			User userUpdate = new User(user.getTipoDoc(), user.getNroDoc(), user.getSessionId(), valores);
 			
-			userDao.save(userUpdate);
+			userRepository.save(userUpdate);
 			
 			response = new Response<>(200, ConstantsUtil.SUCCESS_TRANSACTION, new AddOperandRs("Operand Added"));
 			
@@ -121,19 +136,21 @@ public class MathOperationsImpl implements MathOperationsInt {
 		return response;
 	}
 
+	/**
+	 * Método encargado de realizar un cálculo de una operación
+	 * @param calculateRq Objeto con los datos de la petición
+	 * @return Objeto con los datos de respuesta del servicio
+	 */
 	@Override
 	public Response<CalculateRs> calculate(CalculateRq calculateRq) {
 		Response<CalculateRs> response = null;
 		try {
 			
-			String decryptSessionId = Security.desencriptar(calculateRq.getSessionId(), this.key);
-			String[] datos = decryptSessionId.split("\\.");
-			
-			Optional<User> optional = userDao.findById(Long.valueOf(datos[1]));
-			User user = optional.get();
+			User user = Utility.consultarUsuario(calculateRq.getSessionId(), 
+					this.key, this.userRepository);
 			
 			// Se valida la sesión
-			if (!calculateRq.getSessionId().equals(user.getSessionId())) {
+			if (!Utility.validarSession(calculateRq.getSessionId(), user.getSessionId())) {
 				return new Response<CalculateRs>(400, ConstantsUtil.BAD_REQUEST, new CalculateRs("Invalid Session"));
 			}
 			
@@ -157,68 +174,68 @@ public class MathOperationsImpl implements MathOperationsInt {
 			String responseMessage = "The calculation is: ";
 			BigDecimal calculo = null;
 			switch (operacion) {
-			case "SUMA":
-				calculo = BigDecimal.ZERO;
-				for (String valor : operands) {
-					calculo = calculo.add(new BigDecimal(valor));
-				}
-				responseMessage = responseMessage + calculo.toString();
-				break;
-			case "RESTA":
-				for (String valor : operands) {
-					if (operands.indexOf(valor) == 0) {
-						calculo = new BigDecimal(valor);
-					} else {
-						calculo = calculo.subtract(new BigDecimal(valor));
+				case "SUMA":
+					calculo = BigDecimal.ZERO;
+					for (String valor : operands) {
+						calculo = calculo.add(new BigDecimal(valor));
 					}
-				}
-				responseMessage = responseMessage + calculo.toString();
-				break;
-			case "MULTIPLICACION":
-				for (String valor : operands) {
-					if (operands.indexOf(valor) == 0) {
-						calculo = new BigDecimal(valor);
-					} else {
-						calculo = calculo.subtract(new BigDecimal(valor));
-					}
-				}
-				responseMessage = responseMessage + calculo.toString();
-				break;
-			case "DIVISION":
-				List<String> subList = operands.subList(1, operands.size());
-				if (!subList.contains("0")) {
-					Float division = null;
+					responseMessage = responseMessage + calculo.toString();
+					break;
+				case "RESTA":
 					for (String valor : operands) {
 						if (operands.indexOf(valor) == 0) {
-							division = Float.valueOf(valor);
+							calculo = new BigDecimal(valor);
 						} else {
-							division = division / Float.valueOf(valor);
+							calculo = calculo.subtract(new BigDecimal(valor));
 						}
 					}
-					responseMessage = responseMessage + division.toString();
-				} else {
-					responseMessage = "Invalid Operation";
-				}
-				break;
-			case "POTENCIOACION":
-				Double potencia = null;
-				for (String valor : operands) {
-					if (operands.indexOf(valor) == 0) {
-						potencia = Double.valueOf(valor);
-					} else {
-						potencia = Math.pow(potencia.doubleValue(), Double.valueOf(valor));
+					responseMessage = responseMessage + calculo.toString();
+					break;
+				case "MULTIPLICACION":
+					for (String valor : operands) {
+						if (operands.indexOf(valor) == 0) {
+							calculo = new BigDecimal(valor);
+						} else {
+							calculo = calculo.multiply(new BigDecimal(valor));
+						}
 					}
-				}
-				responseMessage = responseMessage + potencia.toString();
-				break;
-
-			default:
-				responseMessage = "Invalid Operation";
-				break;
+					responseMessage = responseMessage + calculo.toString();
+					break;
+				case "DIVISION":
+					List<String> subList = operands.subList(1, operands.size());
+					if (!subList.contains("0")) {
+						Float division = null;
+						for (String valor : operands) {
+							if (operands.indexOf(valor) == 0) {
+								division = Float.valueOf(valor);
+							} else {
+								division = division / Float.valueOf(valor);
+							}
+						}
+						responseMessage = responseMessage + division.toString();
+					} else {
+						responseMessage = "Invalid Operation";
+					}
+					break;
+				case "POTENCIOACION":
+					Double potencia = null;
+					for (String valor : operands) {
+						if (operands.indexOf(valor) == 0) {
+							potencia = Double.valueOf(valor);
+						} else {
+							potencia = Math.pow(potencia.doubleValue(), Double.valueOf(valor));
+						}
+					}
+					responseMessage = responseMessage + potencia.toString();
+					break;
+	
+				default:
+					responseMessage = "Invalid Operation";
+					break;
 			}
 			
 			// Se elimina el usuario y se finaliza el proceso
-			userDao.delete(user);
+			userRepository.delete(user);
 			
 			response = new Response<>(200, ConstantsUtil.SUCCESS_TRANSACTION, new CalculateRs(responseMessage));
 			
@@ -235,5 +252,4 @@ public class MathOperationsImpl implements MathOperationsInt {
 		
 		return response;
 	}
-
 }

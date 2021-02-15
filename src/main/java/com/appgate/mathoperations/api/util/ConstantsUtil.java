@@ -14,7 +14,10 @@ public class ConstantsUtil {
 	public final static String COMPANY_WEB_SITE = "https://www.appgate.com/"; 
 	public final static String COMPANY_EMAIL = "contacto@appgate.com";
 	
-	// Date converter
-	public final static String DATE_FORMATT = "dd/MM/yyyy HH:mm:ss";
+	// Encrypt / Decrypt
+	public final static String UTF_8 = "UTF-8";
+	public final static String SHA_1 = "SHA-1";
+	public final static String ALGORITHM_SECRET_KEY_AES ="AES";
+	public final static String ALGORITHM_ENCRYP_DECRYPT_AES ="AES/ECB/PKCS5PADDING";
 	
 }

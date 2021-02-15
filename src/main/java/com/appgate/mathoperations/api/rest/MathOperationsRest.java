@@ -72,7 +72,7 @@ public class MathOperationsRest {
 		}
 	}
 	
-	@ApiOperation(value = "calclate value", tags = "calculate")
+	@ApiOperation(value = "Calclate value", tags = "calculate")
 	@PostMapping(value = "calculate")
 	@ResponseBody
 	public Response<CalculateRs> calculate(@Context HttpServletRequest request,

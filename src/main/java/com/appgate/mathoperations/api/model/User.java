@@ -2,30 +2,21 @@ package com.appgate.mathoperations.api.model;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import javax.validation.constraints.NotNull;
 
 import org.springframework.boot.autoconfigure.domain.EntityScan;
-
-import io.swagger.annotations.ApiModelProperty;
 
 @EntityScan
 @Entity
 @Table(name = "USUARIO")
 public class User {
 
-	
-	/*@Id
-    @Column(name="ID", unique=true, updatable=false, nullable=false)
-	@GeneratedValue
-	private long id;*/
-	@Column(name="TIPO_DOC", unique=true, nullable=false)
-	private String tipoDoc;
 	@Id
 	@Column(name="NRO_DOC", unique=true, nullable=false)
 	private Long nroDoc;
+	@Column(name="TIPO_DOC", unique=true, nullable=false)
+	private String tipoDoc;
 	@Column(name="SESSION_ID", unique=true, nullable=false)
 	private String sessionId;
 	@Column(name="VALORES")

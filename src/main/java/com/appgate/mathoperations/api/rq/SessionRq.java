@@ -19,15 +19,7 @@ public class SessionRq {
 		return tipoDoc;
 	}
 	
-	public void setTipoDoc(String tipoDoc) {
-		this.tipoDoc = tipoDoc;
-	}
-	
 	public String getNroDoc() {
 		return nroDoc;
-	}
-	
-	public void setNroDoc(String nroDoc) {
-		this.nroDoc = nroDoc;
 	}
 }

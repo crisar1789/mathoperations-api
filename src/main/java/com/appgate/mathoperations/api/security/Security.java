@@ -12,10 +12,8 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
-/**
- *
- * @author david
- */
+import com.appgate.mathoperations.api.util.ConstantsUtil;
+
 public class Security {
 
     /**
@@ -26,14 +24,14 @@ public class Security {
      * @throws NoSuchAlgorithmException 
      */
     public static SecretKeySpec crearClave(String clave) throws UnsupportedEncodingException, NoSuchAlgorithmException {
-        byte[] claveEncriptacion = clave.getBytes("UTF-8");
+        byte[] claveEncriptacion = clave.getBytes(ConstantsUtil.UTF_8);
         
-        MessageDigest sha = MessageDigest.getInstance("SHA-1");
+        MessageDigest sha = MessageDigest.getInstance(ConstantsUtil.SHA_1);
         
         claveEncriptacion = sha.digest(claveEncriptacion);
         claveEncriptacion = Arrays.copyOf(claveEncriptacion, 16);
         
-        SecretKeySpec secretKey = new SecretKeySpec(claveEncriptacion, "AES");
+        SecretKeySpec secretKey = new SecretKeySpec(claveEncriptacion, ConstantsUtil.ALGORITHM_SECRET_KEY_AES);
 
         return secretKey;
     }
@@ -42,7 +40,7 @@ public class Security {
      * Aplica la encriptacion AES a la cadena de texto usando la clave indicada
      * @param datos Cadena a encriptar
      * @param claveSecreta Clave para encriptar
-     * @return Informaci�n encriptada
+     * @return Información encriptada
      * @throws UnsupportedEncodingException
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeyException
@@ -53,10 +51,10 @@ public class Security {
     public static String encriptar(String datos, String claveSecreta) throws UnsupportedEncodingException, NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException {
         SecretKeySpec secretKey = crearClave(claveSecreta);
         
-        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");        
+        Cipher cipher = Cipher.getInstance(ConstantsUtil.ALGORITHM_ENCRYP_DECRYPT_AES);        
         cipher.init(Cipher.ENCRYPT_MODE, secretKey);
 
-        byte[] datosEncriptar = datos.getBytes("UTF-8");
+        byte[] datosEncriptar = datos.getBytes(ConstantsUtil.UTF_8);
         byte[] bytesEncriptados = cipher.doFinal(datosEncriptar);
         String encriptado = Base64.getEncoder().encodeToString(bytesEncriptados);
 
@@ -78,7 +76,7 @@ public class Security {
     public static String desencriptar(String datosEncriptados, String claveSecreta) throws UnsupportedEncodingException, NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException {
         SecretKeySpec secretKey = crearClave(claveSecreta);
 
-        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5PADDING");
+        Cipher cipher = Cipher.getInstance(ConstantsUtil.ALGORITHM_ENCRYP_DECRYPT_AES);
         cipher.init(Cipher.DECRYPT_MODE, secretKey);
         
         byte[] bytesEncriptados = Base64.getDecoder().decode(datosEncriptados);
