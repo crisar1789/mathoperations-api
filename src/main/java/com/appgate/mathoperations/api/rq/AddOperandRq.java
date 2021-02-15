@@ -6,7 +6,7 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
 @ApiModel(description = "Object Add Operand request")
-public class AddOperandRq extends SessionRq{
+public class AddOperandRq {
 
 	@NotNull
 	@ApiModelProperty(value = "Client session id", required = true)
@@ -19,15 +19,7 @@ public class AddOperandRq extends SessionRq{
 		return sessionId;
 	}
 
-	public void setSessionId(String sessionId) {
-		this.sessionId = sessionId;
-	}
-
 	public String getOperand() {
 		return operand;
-	}
-
-	public void setOperand(String operand) {
-		this.operand = operand;
 	}
 }
